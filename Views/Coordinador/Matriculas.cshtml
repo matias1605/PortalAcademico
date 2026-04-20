@@ -1,0 +1,87 @@
+@model List<PortalAcademico.Models.Matricula>
+@using PortalAcademico.Models
+@{
+    ViewData["Title"] = "Matrículas del Curso";
+    var curso = ViewBag.Curso as Curso;
+}
+
+<a asp-controller="Coordinador" asp-action="Index"
+   class="btn btn-link ps-0 mb-3">← Volver al panel</a>
+
+<h1 class="h3 mb-1">📋 Matrículas</h1>
+<p class="text-muted mb-4">
+    Curso: <strong>@curso?.Nombre</strong> (@curso?.Codigo)
+</p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Este curso no tiene matrículas aún.</div>
+}
+else
+{
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th><th>Usuario</th>
+                <th>Fecha</th><th>Estado</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in Model)
+            {
+                <tr>
+                    <td>@m.Id</td>
+                    <td><small class="text-muted">@m.UsuarioId</small></td>
+                    <td>@m.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        @switch (m.Estado)
+                        {
+                            case EstadoMatricula.Pendiente:
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                break;
+                            case EstadoMatricula.Confirmada:
+                                <span class="badge bg-success">Confirmada</span>
+                                break;
+                            case EstadoMatricula.Cancelada:
+                                <span class="badge bg-danger">Cancelada</span>
+                                break;
+                        }
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            @if (m.Estado != EstadoMatricula.Confirmada)
+                            {
+                                <form asp-controller="Coordinador"
+                                      asp-action="CambiarEstado" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="matriculaId" value="@m.Id" />
+                                    <input type="hidden" name="estado"
+                                           value="@EstadoMatricula.Confirmada" />
+                                    <input type="hidden" name="cursoId" value="@curso!.Id" />
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        ✅ Confirmar
+                                    </button>
+                                </form>
+                            }
+                            @if (m.Estado != EstadoMatricula.Cancelada)
+                            {
+                                <form asp-controller="Coordinador"
+                                      asp-action="CambiarEstado" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="matriculaId" value="@m.Id" />
+                                    <input type="hidden" name="estado"
+                                           value="@EstadoMatricula.Cancelada" />
+                                    <input type="hidden" name="cursoId" value="@curso!.Id" />
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('¿Cancelar matrícula?')">
+                                        ❌ Cancelar
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
