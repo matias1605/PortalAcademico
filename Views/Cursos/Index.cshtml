@@ -1,0 +1,79 @@
+@model List<PortalAcademico.Models.Curso>
+@{
+    ViewData["Title"] = "Catálogo de Cursos";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3">📚 Catálogo de Cursos</h1>
+</div>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <form method="get" asp-controller="Cursos" asp-action="Index">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Nombre</label>
+                    <input type="text" name="nombre" value="@ViewBag.Nombre"
+                           class="form-control" placeholder="Buscar..." />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Créditos mín.</label>
+                    <input type="number" name="creditosMin" value="@ViewBag.CreditosMin"
+                           class="form-control" min="1" max="20" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Créditos máx.</label>
+                    <input type="number" name="creditosMax" value="@ViewBag.CreditosMax"
+                           class="form-control" min="1" max="20" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Horario desde</label>
+                    <input type="time" name="horario" value="@ViewBag.Horario"
+                           class="form-control" />
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+                    <a asp-controller="Cursos" asp-action="Index"
+                       class="btn btn-secondary">Limpiar</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@if (ViewBag.ErrorFiltro != null)
+{
+    <div class="alert alert-danger">@ViewBag.ErrorFiltro</div>
+}
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No se encontraron cursos.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var c in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-primary mb-2">@c.Codigo</span>
+                        <h5 class="card-title">@c.Nombre</h5>
+                        <ul class="list-unstyled text-muted small mb-0">
+                            <li>📖 Créditos: <strong>@c.Creditos</strong></li>
+                            <li>👥 Cupo: <strong>@c.CupoMaximo</strong></li>
+                            <li>🕐 @c.HorarioInicio.ToString("HH:mm") –
+                                @c.HorarioFin.ToString("HH:mm")</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a asp-controller="Cursos" asp-action="Detalle"
+                           asp-route-id="@c.Id"
+                           class="btn btn-outline-primary btn-sm w-100">
+                            Ver detalle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

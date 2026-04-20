@@ -1,0 +1,77 @@
+@model PortalAcademico.Models.Curso
+@{
+    ViewData["Title"] = Model.Nombre;
+    bool yaMatriculado     = ViewBag.YaMatriculado ?? false;
+    int  matriculasActivas = ViewBag.MatriculasActivas ?? 0;
+}
+
+<a asp-controller="Cursos" asp-action="Index" class="btn btn-link ps-0 mb-2">
+    ← Volver al catálogo
+</a>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">@Model.Nombre</h4>
+        <small class="opacity-75">@Model.Codigo</small>
+    </div>
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th class="text-muted">Créditos</th>
+                        <td><strong>@Model.Creditos</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Cupo máximo</th>
+                        <td><strong>@Model.CupoMaximo</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Matriculados</th>
+                        <td><strong>@matriculasActivas / @Model.CupoMaximo</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Horario</th>
+                        <td><strong>@Model.HorarioInicio.ToString("HH:mm") –
+                            @Model.HorarioFin.ToString("HH:mm")</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Estado</th>
+                        <td>
+                            @if (Model.Activo)
+                            { <span class="badge bg-success">Activo</span> }
+                            else
+                            { <span class="badge bg-secondary">Inactivo</span> }
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-5 text-center">
+                @if (!(User.Identity?.IsAuthenticated ?? false))
+                {
+                    <p class="text-muted mb-2">Inicia sesión para inscribirte.</p>
+                    <a asp-area="Identity" asp-page="/Account/Login"
+                       class="btn btn-primary">Iniciar sesión</a>
+                }
+                else if (yaMatriculado)
+                {
+                    <span class="badge bg-success fs-6 p-3">✅ Ya estás matriculado</span>
+                }
+                else if (matriculasActivas >= Model.CupoMaximo)
+                {
+                    <span class="badge bg-danger fs-6 p-3">❌ Cupo lleno</span>
+                }
+                else
+                {
+                    <form asp-controller="Cursos" asp-action="Inscribir"
+                          asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success btn-lg px-4">
+                            ✍️ Inscribirme
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
