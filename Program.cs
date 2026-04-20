@@ -20,7 +20,9 @@ builder.Services
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Redis: Cache + Session
+// ── PREGUNTA 4: Sesiones y Redis ──────────────────────────
+// Cache Redis: cachea listado de cursos activos por 60s
+// Sesión Redis: guarda último curso visitado para el navbar
 var redisConn = builder.Configuration["Redis:ConnectionString"]
     ?? "localhost:6379";
 builder.Services.AddStackExchangeRedisCache(o => {
@@ -32,6 +34,7 @@ builder.Services.AddSession(o => {
     o.Cookie.HttpOnly    = true;
     o.Cookie.IsEssential = true;
 });
+// ──────────────────────────────────────────────────────────
 
 builder.Services.AddControllersWithViews();
 
