@@ -88,7 +88,68 @@ namespace PortalAcademico.Controllers
     ViewBag.Horario     = horario;
     return View(cursos);
 }
+// POST /Cursos/Inscribir/5
+[HttpPost, Authorize, ValidateAntiForgeryToken]
+public async Task<IActionResult> Inscribir(int id)
+{
+    var curso = await _db.Cursos
+        .Include(c => c.Matriculas)
+        .FirstOrDefaultAsync(c => c.Id == id);
+    if (curso == null) return NotFound();
 
+    var uid = _userManager.GetUserId(User)!;
+
+    // Validación 1: ya matriculado en este curso
+    if (await _db.Matriculas.AnyAsync(m =>
+        m.CursoId == id &&
+        m.UsuarioId == uid &&
+        m.Estado != EstadoMatricula.Cancelada))
+    {
+        TempData["Error"] = "Ya estás matriculado en este curso.";
+        return RedirectToAction(nameof(Detalle), new { id });
+    }
+
+    // Validación 2: cupo máximo
+    var activas = curso.Matriculas
+        .Count(m => m.Estado != EstadoMatricula.Cancelada);
+    if (activas >= curso.CupoMaximo)
+    {
+        TempData["Error"] = "Este curso ya alcanzó el cupo máximo.";
+        return RedirectToAction(nameof(Detalle), new { id });
+    }
+
+    // Validación 3: conflicto de horario
+    var cursosUsuario = await _db.Matriculas
+        .Where(m => m.UsuarioId == uid &&
+                    m.Estado != EstadoMatricula.Cancelada)
+        .Include(m => m.Curso)
+        .Select(m => m.Curso!)
+        .ToListAsync();
+
+    if (cursosUsuario.Any(c =>
+        c.HorarioInicio < curso.HorarioFin &&
+        c.HorarioFin    > curso.HorarioInicio))
+    {
+        TempData["Error"] = "Este curso se solapa con el horario de otro curso matriculado.";
+        return RedirectToAction(nameof(Detalle), new { id });
+    }
+
+    // Crear matrícula en estado Pendiente
+    _db.Matriculas.Add(new Matricula
+    {
+        CursoId       = id,
+        UsuarioId     = uid,
+        FechaRegistro = DateTime.Now,
+        Estado        = EstadoMatricula.Pendiente
+    });
+    await _db.SaveChangesAsync();
+
+    // Invalidar cache
+    await _cache.RemoveAsync(CacheKey);
+
+    TempData["Exito"] = $"Te inscribiste en {curso.Nombre}. Estado: Pendiente.";
+    return RedirectToAction(nameof(Detalle), new { id });
+}
         // GET /Cursos/Detalle/5
         public async Task<IActionResult> Detalle(int id)
         {
@@ -113,4 +174,5 @@ namespace PortalAcademico.Controllers
             return View(curso);
         }
     }
+    
 }
