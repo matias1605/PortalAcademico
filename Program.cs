@@ -4,43 +4,64 @@ using PortalAcademico.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+// EF Core + SQLite
+var connStr = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=portal_academico.db";
+builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlite(connStr));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+// Identity
+builder.Services
+    .AddDefaultIdentity<IdentityUser>(o => {
+        o.SignIn.RequireConfirmedAccount = false;
+        o.Password.RequiredLength = 6;
+        o.Password.RequireNonAlphanumeric = false;
+    })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Redis: Cache + Session
+var redisConn = builder.Configuration["Redis:ConnectionString"]
+    ?? "localhost:6379";
+builder.Services.AddStackExchangeRedisCache(o => {
+    o.Configuration = redisConn;
+    o.InstanceName  = "PortalAcademico:";
+});
+builder.Services.AddSession(o => {
+    o.IdleTimeout        = TimeSpan.FromMinutes(30);
+    o.Cookie.HttpOnly    = true;
+    o.Cookie.IsEssential = true;
+});
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
-{
     app.UseMigrationsEndPoint();
-}
-else
-{
+else {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
-
+app.UseSession();
+app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Cursos}/{action=Index}/{id?}");
+app.MapRazorPages();
 
-app.MapRazorPages()
-   .WithStaticAssets();
+// Migraciones y seed automático
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+    await SeedData.InicializarAsync(scope.ServiceProvider);
+}
 
 app.Run();
