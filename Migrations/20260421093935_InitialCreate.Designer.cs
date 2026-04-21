@@ -11,7 +11,7 @@ using PortalAcademico.Data;
 namespace PortalAcademico.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260421093539_InitialCreate")]
+    [Migration("20260421093935_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
