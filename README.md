@@ -60,7 +60,7 @@ Abrir: http://localhost:5000
 
 ## URL en Render
 
-https://portal-academico.onrender.com
+https://portalacademico-dtd8.onrender.com
 
 ---
 
